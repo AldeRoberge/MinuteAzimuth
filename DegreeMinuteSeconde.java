@@ -31,18 +31,6 @@ public class DegreeMinuteSeconde {
 	 */
 	public static void main(String[] args) {
 
-		try {
-			// Set cross-platform Java L&F (also called "Metal")
-			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-		} catch (UnsupportedLookAndFeelException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
 
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -68,11 +56,11 @@ public class DegreeMinuteSeconde {
 	 */
 	private void initialize() {
 		frmMinuteAzimuth = new JFrame();
+		frmMinuteAzimuth.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		frmMinuteAzimuth.setIconImage(Toolkit.getDefaultToolkit().getImage(
 				DegreeMinuteSeconde.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
 		frmMinuteAzimuth.setTitle("Minute, Azimuth!");
 		frmMinuteAzimuth.setBounds(100, 100, 516, 300);
-		frmMinuteAzimuth.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmMinuteAzimuth.getContentPane().setLayout(new BorderLayout(0, 0));
 
 		JSplitPane splitPane = new JSplitPane();
@@ -118,39 +106,67 @@ public class DegreeMinuteSeconde {
 
 		outputTextArea.setText("");
 
-		List<String> arrList = getTextAreaAsArrayList(inputTextArea);
+		List<String> arrList = JTextAreaToArray.getTextAreaAsArrayList(inputTextArea);
 
 		String error = "";
 
 		for (String s : arrList) {
-			String[] lineSplit = s.split(",");
 
 			int degree = 0, minutes = 0, seconds = 0;
 
-			if (lineSplit.length == 1) {
-				degree = parse(lineSplit[0]);
-				minutes = 0;
-				seconds = 0;
-			} else if (lineSplit.length == 2) {
-				degree = parse(lineSplit[0]);
-				minutes = parse(lineSplit[1]);
-				seconds = 0;
-			} else if (lineSplit.length == 3) {
-				degree = parse(lineSplit[0]);
-				minutes = parse(lineSplit[1]);
-				seconds = parse(lineSplit[2]);
-			} else {
-				error += "Error : Line " + arrList.indexOf(s) + " '" + s + "' has an invalid number of arguments : "
-						+ lineSplit.length;
-				System.err.println(error);
-			}
-
-			if (degree == -1 || minutes == -1 || seconds == -1) {
-				error += "Invalid";
-				degree = 0;
-			}
-
 			String output = "";
+
+			if (s.contains(",")) {
+				String[] lineSplit = s.split(",");
+
+				if (lineSplit.length == 1) {
+					degree = parse(lineSplit[0]);
+					minutes = 0;
+					seconds = 0;
+				} else if (lineSplit.length == 2) {
+					degree = parse(lineSplit[0]);
+					minutes = parse(lineSplit[1]);
+					seconds = 0;
+				} else if (lineSplit.length == 3) {
+					degree = parse(lineSplit[0]);
+					minutes = parse(lineSplit[1]);
+					seconds = parse(lineSplit[2]);
+				} else {
+					error += "Error : Line " + arrList.indexOf(s) + " '" + s + "' has an invalid number of arguments : "
+							+ lineSplit.length;
+					System.err.println(error);
+				}
+
+				if (degree == -1 || minutes == -1 || seconds == -1) {
+					error += "Invalid";
+					degree = 0;
+				}
+
+			} else if (s.contains("°")) {
+				// -40°30'
+
+				try {
+
+					if (s.contains("°")) {
+						degree = parse(s.substring(0, s.indexOf("°")));
+
+						if (s.contains("'")) {
+							minutes = parse(s.substring(s.indexOf("°") + 1, s.indexOf("'")));
+
+							if (s.contains("\"")) {
+								seconds = parse(s.substring(s.indexOf("'") + 1, s.indexOf("\"")));
+							}
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+					error += "Error! Could not parse this string.";
+				}
+
+			} else {
+				error += "Invalid string format. Valid formats are '48,18,34' and '—48°18'34\"";
+			}
 
 			if (!error.equals("")) {
 				output = "*" + error + "*";
@@ -161,12 +177,6 @@ public class DegreeMinuteSeconde {
 			outputTextArea.append(output + "\n");
 
 		}
-
-	}
-
-	private List<String> getTextAreaAsArrayList(JTextArea j) {
-		String s2[] = j.getText().split("\\r?\\n");
-		return new ArrayList<>(Arrays.asList(s2));
 
 	}
 
@@ -193,9 +203,9 @@ public class DegreeMinuteSeconde {
 
 		DecimalFormat df = new DecimalFormat(".####");
 
-		String f = df.format(degree + ((float) minutes / 60 + seconds / 3600));
+		String f = df.format(((float) minutes / 60 + seconds / 3600));
 
-		return f;
+		return degree + f;
 
 	}
 
